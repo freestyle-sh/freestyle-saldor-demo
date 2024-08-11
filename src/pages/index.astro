@@ -1,0 +1,8 @@
+---
+import { useCloud } from "freestyle-sh";
+import { ConversationManagerCS } from "../cloudstate/manager";
+
+const manager = useCloud<typeof ConversationManagerCS>("conversation-manager");
+const { id } = await manager.createConversation();
+return Astro.redirect(`/chat/${id}`);
+---

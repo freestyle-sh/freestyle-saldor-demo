@@ -1,0 +1,8 @@
+---
+import { Chatbot } from "../../components/chatbot";
+import Layout from "../../layouts/Layout.astro";
+---
+<div class="h-screen flex flex-col"> 
+<Chatbot client:only="react" conversationId={Astro.params.chat!} />
+
+</div>
