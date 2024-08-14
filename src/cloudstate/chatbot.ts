@@ -2,11 +2,34 @@ import { cloudstate, useRequest } from "freestyle-sh";
 import { MessageListCS, TextMessageCS } from "freestyle-chat";
 import type { BaseUserCS } from "freestyle-auth/passkey";
 import { parse as parseCookie } from "cookie";
-// import * as Saldor from "saldor";
+import * as Saldor from "saldor";
 
 @cloudstate
 export class ChatCS extends MessageListCS {
   id = crypto.randomUUID();
+  ragCache = {
+    lastCached: 0,
+    data:undefined
+  } as {
+    lastCached: number;
+    data: {
+      data: string[];
+    } | undefined;
+  }
+
+
+  async saldorCall() {
+    const refetchTime = 1000 * 60 * 60 * 24; // 24 hours
+    if (Date.now() - this.ragCache.lastCached < refetchTime) {
+      return this.ragCache.data
+    }
+    
+    const saldor = new Saldor.SaldorClient(process.env.SALDOR_API_KEY);
+    const out = await saldor.scrape("")
+
+    this.ragCache.data = out;
+    this.ragCache.lastCached = Date.now();
+  }
 
   override getCurrentUser(): BaseUserCS {
     const req = useRequest();
@@ -22,39 +45,17 @@ export class ChatCS extends MessageListCS {
 
   override async _onMessageAdded(message: TextMessageCS): Promise<void> {
     if (message.sender.id !== "SALDOR") {
-      //{ data: string[] }
-      const saldorOut = await fetch(
-        "https://api.saldor.com/scrape",
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": process.env.SALDOR_API_KEY,
-          },
-          method: "POST",
-          body: JSON.stringify({
-            url: "https://www.advil.com/our-products/advil-pain/advil-migraine/",
-            params: {
-              max_depth: 2,
-              prompt: `Summarize what is going on on this page`,
-            },
-          }),
-        }
-      );
-      console.log("Respponse", saldorOut.headers.get("content-type"), saldorOut.ok);
-      const saldorText = await saldorOut.text();
-      console.log("SALDOR OUT", saldorText);
-      
+      const ragData = await this.saldorCall();
+      // rag goes here
+      const ragOut = "RAG out goes here";
+      await this._addMessage(new TextMessageCS({
+        text: ragOut,
+        sender: {
+          id: "SALDOR",
+          username: "Saldor",
+        },
+      }))
 
-      // console.log("SALDOR OUT", saldorOut);
-
-      // for (const text of saldorOut.data) {
-      //   await this._addMessage(
-      //     new TextMessageCS({
-      //       sender: { id: "SALDOR", username: "SALDOR" },
-      //       text: text,
-      //     })
-      //   );
-      // }
     }
   }
 }
