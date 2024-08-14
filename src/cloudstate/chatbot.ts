@@ -9,23 +9,24 @@ export class ChatCS extends MessageListCS {
   id = crypto.randomUUID();
   ragCache = {
     lastCached: 0,
-    data:undefined
+    data: undefined,
   } as {
     lastCached: number;
-    data: {
-      data: string[];
-    } | undefined;
-  }
-
+    data:
+      | {
+          data: string[];
+        }
+      | undefined;
+  };
 
   async saldorCall() {
     const refetchTime = 1000 * 60 * 60 * 24; // 24 hours
     if (Date.now() - this.ragCache.lastCached < refetchTime) {
-      return this.ragCache.data
+      return this.ragCache.data;
     }
-    
+
     const saldor = new Saldor.SaldorClient(process.env.SALDOR_API_KEY);
-    const out = await saldor.scrape("")
+    const out = await saldor.scrape("");
 
     this.ragCache.data = out;
     this.ragCache.lastCached = Date.now();
@@ -44,18 +45,21 @@ export class ChatCS extends MessageListCS {
   }
 
   override async _onMessageAdded(message: TextMessageCS): Promise<void> {
-    if (message.sender.id !== "SALDOR") {
-      const ragData = await this.saldorCall();
-      // rag goes here
-      const ragOut = "RAG out goes here";
-      await this._addMessage(new TextMessageCS({
-        text: ragOut,
-        sender: {
-          id: "SALDOR",
-          username: "Saldor",
-        },
-      }))
-
+    try {
+      if (message.sender.id !== "SALDOR") {
+        // const ragData = await this.saldorCall();
+        // // rag goes here
+        // const ragOut = "RAG out goes here";
+        // await this._addMessage(new TextMessageCS({
+        //   text: ragOut,
+        //   sender: {
+        //     id: "SALDOR",
+        //     username: "Saldor",
+        //   },
+        // }))
+      }
+    } catch (e) {
+      console.error(e);
     }
   }
 }

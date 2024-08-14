@@ -2,7 +2,18 @@
 import { Chatbot } from "../../components/chatbot";
 import Layout from "../../layouts/Layout.astro";
 ---
-<div class="h-screen flex flex-col"> 
-<Chatbot client:only="react" conversationId={Astro.params.chat!} />
 
-</div>
+<Layout title="Chat">
+  <div class="h-screen flex flex-col">
+    <Chatbot client:only="react" conversationId={Astro.params.chat!} />
+  </div>
+  <a
+    target="_blank"
+    href={"https://freestyle.sh"}
+    class="select-none fixed top-3 sm:top-auto sm:bottom-3 right-3 bg-emerald-900/90 shadow-md shadow-emerald-900/25 px-4 py-2 rounded-lg transition-all hover:bg-emerald-600 hover:shadow-emerald-950/30 hover:shadow-lg text-white font-mono text-xs z-40 backdrop-blur-sm"
+  >
+    <span class="font-normal text-white/85">Built on </span><span
+      class="font-bold">Freestyle.sh</span
+    >
+  </a>
+</Layout>
