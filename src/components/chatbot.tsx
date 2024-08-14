@@ -62,7 +62,7 @@ export function Chatbot(props: { conversationId: string }) {
               </p>
               <div className=" h-4 block" />
               You can ask about anything, but here are some examples:
-              <ul className="list-disc">
+              <ul className="list-disc ml-4">
                 <li className="my-2">
                   <button
                     onClick={async () => {
