@@ -1,6 +1,17 @@
 ---
 import { Chatbot } from "../../components/chatbot";
 import Layout from "../../layouts/Layout.astro";
+import type { ConversationManagerCS } from "../../cloudstate/manager";
+import { useCloud } from "freestyle-sh";
+
+const convManager = useCloud<typeof ConversationManagerCS>("conversation-manager");
+
+convManager.doesConversationExist(Astro.params.chat!).then((exists) => {
+  if (!exists) {
+    window.location.href = "/";
+  }
+});
+
 ---
 
 <Layout title="Chat">
