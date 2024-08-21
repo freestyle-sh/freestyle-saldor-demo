@@ -32,14 +32,14 @@ export class SaldorClient {
       const response = await fetch(`${this.baseURL}/crawl`, {
         method: "POST",
         headers: {
+          "Authorization": `apikey ${this.apiKey}`,
           "Content-Type": "application/json",
-          "x-api-key": this.apiKey,
         },
         body: JSON.stringify({
           url,
           goal,
           max_depth: 0,
-          max_pages: 10,
+          max_pages: 1,
         }),
       });
       return response.json() as Promise<{
@@ -70,8 +70,8 @@ export class SaldorClient {
     const response = await fetch(`${this.baseURL}/crawl/${crawl_id}`, {
       method: "GET",
       headers: {
+        "Authorization": `apikey ${this.apiKey}`,
         "Content-Type": "application/json",
-        "x-api-key": this.apiKey,
       }
     })
     
@@ -99,20 +99,20 @@ export class ChatCS extends MessageListCS {
     retriever: any;
   };
 
-  async saldorCall() {
+  async saldorCall(): Promise<[any, any]> {
     const refetchTime = 1000 * 60 * 60 * 24; // 24 hours
     if (Date.now() - this.ragCache.lastCached < refetchTime) {
-      return this.ragCache.chain, this.ragCache.retriever;
+      return [this.ragCache.chain, this.ragCache.retriever];
     }
+    console.log("Refetching data", this.ragCache.lastCached, Date.now());
 
-
-    const saldor = new SaldorClient(process.env.SALDOR_API_KEY!);
+    const saldor = new SaldorClient(process.env.SALDOR_API_KEY!, "http://localhost:8000");
     const out = await saldor.crawl(
       "https://techcrunch.com/category/startups/",
       "Acquire all information from techcrunch.com relating to startup news"
     );
     const crawlId = out.data.id;
-    let crawlStatus;
+    let crawlStatus: { data: { state: string; result: string[] } };
     let crawlStarted = Date.now();
     do {
       crawlStatus = await saldor.get_crawl_status(crawlId);
@@ -131,10 +131,9 @@ export class ChatCS extends MessageListCS {
 
     if (crawlStatus.data.state == "completed") {
       console.log("Crawl completed successfully");
-      console.log(crawlStatus.data);
     } else {
       console.error("Crawl failed");
-      return;
+      return [undefined, undefined];
     }
     const results: string[] = crawlStatus.data.result;
 
@@ -178,6 +177,8 @@ export class ChatCS extends MessageListCS {
     this.ragCache.chain = ragChain;
     this.ragCache.retriever = retriever;
     this.ragCache.lastCached = Date.now();
+    console.log("RAG cached", this.ragCache.lastCached);
+    return [this.ragCache.chain, this.ragCache.retriever];
   }
 
   override getCurrentUser(): BaseUserCS {
@@ -196,15 +197,18 @@ export class ChatCS extends MessageListCS {
     try {
       if (message.sender.id !== "SALDOR") {
         const [chain, retriever] = await this.saldorCall();
+        console.log("Retriever");
         const retrieved_docs = await retriever.invoke(message.text);
+        console.log("Retrieved");
         let data = await chain.invoke({
-          context: retriever,
+          context: retrieved_docs,
           question: message.text,
         });
+        console.log("Data");
         if (!data) {
           data = "No data found";
         }
-        // rag goes here
+        console.log(data);
         await this._addMessage(
           new TextMessageCS({
             text: data,
@@ -214,6 +218,7 @@ export class ChatCS extends MessageListCS {
             },
           })
         );
+        console.log("Message added?");
       }
     } catch (e) {
       console.error(e);
